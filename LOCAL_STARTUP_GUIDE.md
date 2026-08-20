@@ -82,13 +82,28 @@ docker pull postgres:15-alpine
 docker run --name ecommerce-db -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:15-alpine
 ```
 
-### Option B: Local PostgreSQL Installation
+### Option B: Local PostgreSQL Installation (Windows)
 
-1. Install PostgreSQL 15 locally
-2. Create database:
+Open **PowerShell as Administrator**, then install PostgreSQL 15:
+
+```powershell
+winget install --id PostgreSQL.PostgreSQL.15 --exact --accept-source-agreements --accept-package-agreements
+```
+
+During the installer, keep port `5432`, remember the `postgres` password, and allow the PostgreSQL service to start.
+
+Then open a normal PowerShell and create the application role/database. Replace `<postgres-password>` with the password chosen during installation:
+
+```powershell
+& "C:\Program Files\PostgreSQL\15\bin\psql.exe" -U postgres -h localhost -f "c:\dev\E-Commerce Platform\server\scripts\setup-database.sql"
+```
+
+Alternatively, create the database manually:
    ```bash
    psql -U postgres
-   CREATE DATABASE ecommerce_db;
+  CREATE USER ecommerce_user WITH PASSWORD 'ecommerce_password';
+  CREATE DATABASE ecommerce_db OWNER ecommerce_user;
+  GRANT ALL PRIVILEGES ON DATABASE ecommerce_db TO ecommerce_user;
    ```
 
 ### Option C: Using docker-compose (if Docker installed)
@@ -170,6 +185,16 @@ ENABLE_SEARCH=true
 ENABLE_RECOMMENDATIONS=true
 ENABLE_CHATBOT=true
 ```
+
+### 4. Verify the Database
+
+```powershell
+Get-Service postgresql-x64-15
+Test-NetConnection localhost -Port 5432
+& "C:\Program Files\PostgreSQL\15\bin\psql.exe" "postgresql://ecommerce_user:ecommerce_password@localhost:5432/ecommerce_db" -c "SELECT NOW();"
+```
+
+When the backend starts, it creates the `users` table automatically. You should see `Database connected` and `Users table ready` in its terminal.
 
 ---
 
