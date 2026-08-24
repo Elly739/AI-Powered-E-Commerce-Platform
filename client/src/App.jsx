@@ -69,17 +69,34 @@ function AuthPage({ mode, onAuthenticated }) {
 }
 
 function Dashboard({ user, onLogout }) {
+  const [orders, setOrders] = useState([])
+  const [loadingOrders, setLoadingOrders] = useState(true)
+  const [orderError, setOrderError] = useState('')
+
+  useEffect(() => {
+    const token = localStorage.getItem('ecommerce_token')
+    fetch('http://localhost:5000/api/orders', { headers: { Authorization: `Bearer ${token}` } })
+      .then((response) => {
+        if (!response.ok) throw new Error('Order history is temporarily unavailable.')
+        return response.json()
+      })
+      .then((result) => setOrders(result.data || []))
+      .catch((error) => setOrderError(error.message))
+      .finally(() => setLoadingOrders(false))
+  }, [])
+
   return (
     <section className="dashboard">
       <div className="dashboard-heading">
-        <div><span className="eyebrow">Your account</span><h2>Good to see you, {user.name.split(' ')[0]}.</h2></div>
+        <div><span className="eyebrow">Your account</span><h2>Good to see you, {user.name.split(' ')[0]}.</h2><p className="dashboard-email">{user.email}</p></div>
         <button className="btn-secondary" onClick={onLogout}>Sign out</button>
       </div>
       <div className="dashboard-grid">
         <article className="stat-card"><span>Profile signal</span><strong>Getting clearer</strong><p>We are learning what makes your taste tick.</p></article>
-        <article className="stat-card accent-card"><span>Saved for later</span><strong>0 items</strong><p>Your wishlist will appear here.</p></article>
-        <article className="stat-card"><span>Recent orders</span><strong>Nothing yet</strong><p>Your next great find could be today.</p></article>
+        <Link to="/wishlist" className="stat-card accent-card"><span>Saved for later</span><strong>See your edit</strong><p>Return to the pieces you want to remember.</p></Link>
+        <Link to="/products" className="stat-card"><span>Keep exploring</span><strong>Find a new favorite</strong><p>There are more considered pieces in the current edit.</p></Link>
       </div>
+      <section className="order-history"><div className="section-heading"><div><span className="eyebrow">Your history</span><h3>Orders, kept close.</h3></div><Link to="/products" className="text-link">Shop the edit</Link></div>{loadingOrders && <p className="muted">Gathering your orders...</p>}{orderError && <p className="form-error">{orderError}</p>}{!loadingOrders && !orderError && !orders.length && <p className="muted">Your first order will appear here after checkout.</p>}{orders.map((order) => <article className="order-row" key={order.id}><div><span>Order #{order.id}</span><strong>{new Date(order.createdAt).toLocaleDateString()}</strong></div><span className="order-status">{order.status}</span><strong>${order.total}</strong></article>)}</section>
     </section>
   )
 }
