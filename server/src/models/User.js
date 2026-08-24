@@ -1,13 +1,17 @@
 import { pool } from '../config/database.js'
 
-export const createUser = async ({ email, passwordHash, fullName, phone = null }) => {
+export const createUser = async ({ email, passwordHash, fullName, phone = null, role = 'customer' }) => {
   const { rows } = await pool.query(
-    `INSERT INTO users (email, password_hash, full_name, phone)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO users (email, password_hash, full_name, phone, role)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING id, email, full_name, phone, role, created_at`,
-    [email, passwordHash, fullName, phone]
+    [email, passwordHash, fullName, phone, role]
   )
   return rows[0]
+}
+
+export const promoteDesignatedAdmin = async () => {
+  await pool.query('UPDATE users SET role = $1 WHERE LOWER(email) = LOWER($2)', ['admin', process.env.ADMIN_EMAIL || 'iamellyokello@gmail.com'])
 }
 
 export const findUserByEmail = async (email) => {
@@ -39,4 +43,5 @@ export const initializeUsersTable = async () => {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `)
+  await promoteDesignatedAdmin()
 }

@@ -20,8 +20,10 @@ router.post('/register', async (req, res, next) => {
     if (password.length < 8) return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' })
     if (await findUserByEmail(email)) return res.status(409).json({ success: false, message: 'Email already registered' })
 
-    const user = await createUser({ email: email.toLowerCase().trim(), passwordHash: await hashPassword(password), fullName: fullName.trim(), phone })
-    res.status(201).json({ success: true, message: 'Registration successful', data: { user: publicUser(user), token: generateToken(user.id, user.role) } })
+    const normalizedEmail = email.toLowerCase().trim()
+    const role = normalizedEmail === (process.env.ADMIN_EMAIL || 'iamellyokello@gmail.com').toLowerCase() ? 'admin' : 'customer'
+    const user = await createUser({ email: normalizedEmail, passwordHash: await hashPassword(password), fullName: fullName.trim(), phone, role })
+    res.status(201).json({ success: true, message: 'Registration successful', data: { user: publicUser(user), token: generateToken(user.id, user.role, user.email) } })
   } catch (error) {
     next(error)
   }
@@ -32,7 +34,7 @@ router.post('/login', async (req, res, next) => {
     const { email, password } = req.body
     const user = email && await findUserByEmail(email.toLowerCase().trim())
     if (!user || !password || !(await comparePassword(password, user.password_hash))) return res.status(401).json({ success: false, message: 'Invalid email or password' })
-    res.json({ success: true, message: 'Login successful', data: { user: publicUser(user), token: generateToken(user.id, user.role) } })
+    res.json({ success: true, message: 'Login successful', data: { user: publicUser(user), token: generateToken(user.id, user.role, user.email) } })
   } catch (error) {
     next(error)
   }

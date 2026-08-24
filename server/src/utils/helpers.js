@@ -2,9 +2,9 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 
 // JWT utilities
-export const generateToken = (userId, role = 'user') => {
+export const generateToken = (userId, role = 'user', email = undefined) => {
   return jwt.sign(
-    { userId, role },
+    { userId, role, ...(email && { email }) },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE_IN || '24h' }
   )

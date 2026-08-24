@@ -95,3 +95,18 @@ export const findProductById = async (id) => {
   )
   return rows[0]
 }
+
+export const createProduct = async ({ name, slug, description = '', price, stockQuantity, categoryId = null }) => {
+  const { rows } = await pool.query(`INSERT INTO products (name, slug, description, price, stock_quantity, category_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, slug, description, price, stock_quantity AS "stockQuantity", category_id AS "categoryId"`, [name, slug, description, price, stockQuantity, categoryId])
+  return rows[0]
+}
+
+export const updateProduct = async (id, fields) => {
+  const { rows } = await pool.query(`UPDATE products SET name = COALESCE($2, name), description = COALESCE($3, description), price = COALESCE($4, price), stock_quantity = COALESCE($5, stock_quantity), category_id = COALESCE($6, category_id), updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, name, slug, description, price, stock_quantity AS "stockQuantity", category_id AS "categoryId"`, [id, fields.name, fields.description, fields.price, fields.stockQuantity, fields.categoryId])
+  return rows[0]
+}
+
+export const deactivateProduct = async (id) => {
+  const { rows } = await pool.query('UPDATE products SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id', [id])
+  return rows[0]
+}

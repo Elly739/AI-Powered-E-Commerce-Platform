@@ -233,6 +233,26 @@ function WishlistPage() {
   return <section className="wishlist-page container-main"><div className="wishlist-heading"><div><span className="eyebrow">Your wishlist</span><h2>The ones<br /><em>to remember.</em></h2></div><span className="cart-summary">{items.length} saved</span></div>{items.length === 0 ? <div className="cart-empty"><p className="muted">Nothing saved yet. Start with the current edit.</p><Link to="/products" className="text-link">Browse the edit</Link></div> : <div className="wishlist-grid">{items.map((item, index) => <article className="wishlist-card" key={item.id}><div className={`wishlist-thumb product-image-${index % 3}`} /><span className="product-category">{item.categoryName}</span><h3>{item.name}</h3><div className="wishlist-card-bottom"><strong>${item.price}</strong><button className="remove-item" onClick={() => remove(item.id)}>Remove</button></div></article>)}</div>}</section>
 }
 
+function AdminPage() {
+  const [products, setProducts] = useState([])
+  const [form, setForm] = useState({ name: '', slug: '', description: '', price: '', stockQuantity: '' })
+  const [message, setMessage] = useState('')
+  const token = localStorage.getItem('ecommerce_token')
+
+  const loadProducts = () => fetch('http://localhost:5000/api/products').then((response) => response.json()).then((result) => setProducts(result.data))
+  useEffect(() => { loadProducts() }, [])
+
+  const createProduct = async (event) => {
+    event.preventDefault()
+    const response = await fetch('http://localhost:5000/api/products', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, price: Number(form.price), stockQuantity: Number(form.stockQuantity) }) })
+    const result = await response.json()
+    setMessage(response.ok ? 'Product added to the edit.' : result.message)
+    if (response.ok) { setForm({ name: '', slug: '', description: '', price: '', stockQuantity: '' }); loadProducts() }
+  }
+
+  return <section className="admin-page container-main"><div className="admin-heading"><div><span className="eyebrow">Admin studio</span><h2>Shape the<br /><em>next edit.</em></h2></div><span className="cart-summary">{products.length} live products</span></div><div className="admin-layout"><form className="admin-form" onSubmit={createProduct}><h3>Add a product</h3><label>Name<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /></label><label>Slug<input value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} placeholder="unique-product-slug" required /></label><label>Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label><div className="admin-form-row"><label>Price<input type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} required /></label><label>Stock<input type="number" min="0" value={form.stockQuantity} onChange={(event) => setForm({ ...form, stockQuantity: event.target.value })} required /></label></div><button className="btn-primary" type="submit">Publish product <span>→</span></button>{message && <p className="muted">{message}</p>}</form><div className="admin-list"><span className="eyebrow">Live catalog</span>{products.map((product) => <div className="admin-product" key={product.id}><div><strong>{product.name}</strong><span>{product.categoryName || 'Uncategorized'}</span></div><span>${product.price} / {product.stockQuantity} in stock</span></div>)}</div></div></section>
+}
+
 function App() {
   const [user, setUser] = useState(() => normalizeUser(JSON.parse(localStorage.getItem('ecommerce_user') || 'null')))
 
@@ -275,7 +295,7 @@ function App() {
         <header className="site-header">
           <nav className="container-main nav-bar">
             <Link to="/" className="brand"><span className="brand-mark">A</span> Aster & Co.</Link>
-            <div className="nav-links"><Link to="/products">Discover</Link><Link to="/cart">Cart <span className="cart-count">0</span></Link>{user ? <><Link to="/wishlist">Saved</Link><Link to="/dashboard" className="profile-link">{user.name.charAt(0)}</Link></> : <Link to="/login" className="nav-cta">Sign in</Link>}</div>
+            <div className="nav-links"><Link to="/products">Discover</Link><Link to="/cart">Cart <span className="cart-count">0</span></Link>{user ? <><Link to="/wishlist">Saved</Link>{user.role === 'admin' && <Link to="/admin">Studio</Link>}<Link to="/dashboard" className="profile-link">{user.name.charAt(0)}</Link></> : <Link to="/login" className="nav-cta">Sign in</Link>}</div>
           </nav>
         </header>
 
@@ -289,6 +309,7 @@ function App() {
             <Route path="/products/:id" element={<ProductDetailPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/admin" element={user?.role === 'admin' ? <AdminPage /> : <Navigate to="/" replace />} />
           </Routes>
         </main>
 
