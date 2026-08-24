@@ -2,11 +2,12 @@ import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
 import dotenv from 'dotenv'
-import { authRoutes, cartRoutes, productRoutes, wishlistRoutes } from './routes/index.js'
+import { authRoutes, cartRoutes, orderRoutes, productRoutes, wishlistRoutes } from './routes/index.js'
 import { initializeUsersTable } from './models/User.js'
 import { initializeProductTables } from './models/Product.js'
 import { initializeCartTable } from './models/Cart.js'
 import { initializeWishlistTable } from './models/Wishlist.js'
+import { initializeOrderTables } from './models/Order.js'
 
 dotenv.config()
 
@@ -36,9 +37,7 @@ app.use('/api/products', productRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/wishlist', wishlistRoutes)
 
-app.use('/api/orders', (req, res) => {
-  res.json({ message: 'Order routes - Phase 5' })
-})
+app.use('/api/orders', orderRoutes)
 
 app.use('/api/chat', (req, res) => {
   res.json({ message: 'Chat routes - Phase 8' })
@@ -72,6 +71,8 @@ app.listen(PORT, async () => {
     console.log('✅ Cart table ready')
     await initializeWishlistTable()
     console.log('✅ Wishlist table ready')
+    await initializeOrderTables()
+    console.log('✅ Order tables ready')
   } catch (error) {
     console.error('⚠️ Users table unavailable:', error.message)
   }

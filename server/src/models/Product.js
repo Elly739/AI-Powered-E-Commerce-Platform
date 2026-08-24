@@ -41,7 +41,10 @@ export const initializeProductTables = async () => {
     FROM (VALUES
       ('Daily rituals', 'The Morning Mug', 'the-morning-mug', 'A generous stoneware mug for slow starts and strong coffee.', 28.00, 24),
       ('Home objects', 'Folded Desk Lamp', 'folded-desk-lamp', 'Warm, directional light for the corner where good ideas happen.', 96.00, 12),
-      ('Wearables', 'Everyday Canvas Tote', 'everyday-canvas-tote', 'A sturdy carryall with room for the things that follow you around.', 42.00, 31)
+      ('Wearables', 'Everyday Canvas Tote', 'everyday-canvas-tote', 'A sturdy carryall with room for the things that follow you around.', 42.00, 31),
+      ('Daily rituals', 'Cedar Hand Soap', 'cedar-hand-soap', 'A grounding, low-foam wash scented with cedar and green citrus.', 18.00, 40),
+      ('Home objects', 'Quiet Hour Candle', 'quiet-hour-candle', 'A clean burn with notes of hinoki, moss, and a little stillness.', 32.00, 18),
+      ('Wearables', 'Soft Utility Cap', 'soft-utility-cap', 'An unstructured cotton cap for sunny walks and unplanned afternoons.', 36.00, 16)
     ) AS product(category_name, name, slug, description, price, stock_quantity)
     JOIN categories c ON c.name = product.category_name
     ON CONFLICT (slug) DO NOTHING

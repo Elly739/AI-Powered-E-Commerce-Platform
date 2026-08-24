@@ -164,6 +164,7 @@ function CartPage() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [ordered, setOrdered] = useState(null)
   const token = localStorage.getItem('ecommerce_token')
 
   const loadCart = () => fetch('http://localhost:5000/api/cart', { headers: { Authorization: `Bearer ${token}` } }).then((response) => {
@@ -184,12 +185,21 @@ function CartPage() {
     loadCart()
   }
 
+  const placeOrder = async () => {
+    const response = await fetch('http://localhost:5000/api/orders', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+    const result = await response.json()
+    if (!response.ok) return setError(result.message || 'Checkout could not be completed.')
+    setOrdered(result.data)
+    setItems([])
+  }
+
   if (!token) return <section className="cart-page container-main"><span className="eyebrow">Your cart</span><h2>A little room<br /><em>for good things.</em></h2><p className="muted">Sign in to keep your cart with you wherever you go.</p><Link to="/login" className="btn-primary">Sign in to continue <span>→</span></Link></section>
   if (loading) return <section className="cart-page container-main"><p className="muted">Gathering your saved pieces...</p></section>
   if (error) return <section className="cart-page container-main"><p className="form-error">{error}</p></section>
+  if (ordered) return <section className="cart-page order-success container-main"><span className="eyebrow">Order placed</span><h2>That’s a good<br /><em>start.</em></h2><p className="muted">Order #{ordered.id} is confirmed. Your pieces are now on their way into your story.</p><Link to="/products" className="btn-primary">Keep exploring <span>→</span></Link></section>
 
   const total = items.reduce((sum, item) => sum + Number(item.subtotal), 0)
-  return <section className="cart-page container-main"><div className="cart-heading"><div><span className="eyebrow">Your cart</span><h2>Good choices,<br /><em>gathered.</em></h2></div><span className="cart-summary">{items.length} {items.length === 1 ? 'piece' : 'pieces'}</span></div>{items.length === 0 ? <div className="cart-empty"><p className="muted">Nothing here yet. The edit is full of possibilities.</p><Link to="/products" className="text-link">Browse the edit</Link></div> : <div className="cart-layout"><div className="cart-items">{items.map((item, index) => <article className="cart-item" key={item.productId}><div className={`cart-thumb product-image-${index % 3}`} /><div className="cart-item-info"><span className="product-category">In your edit</span><h3>{item.name}</h3><span className="muted">${item.price} each</span></div><div className="quantity-control"><button onClick={() => updateQuantity(item.productId, item.quantity - 1)} aria-label={`Decrease ${item.name} quantity`}>−</button><span>{item.quantity}</span><button onClick={() => updateQuantity(item.productId, item.quantity + 1)} aria-label={`Increase ${item.name} quantity`}>+</button></div><strong>${item.subtotal}</strong><button className="remove-item" onClick={() => removeItem(item.productId)}>Remove</button></article>)}</div><aside className="cart-total"><span className="eyebrow">Order preview</span><div><span>Subtotal</span><strong>${total.toFixed(2)}</strong></div><p>Shipping and taxes are calculated at checkout.</p><button className="btn-primary" disabled>Continue to checkout <span>→</span></button></aside></div>}</section>
+  return <section className="cart-page container-main"><div className="cart-heading"><div><span className="eyebrow">Your cart</span><h2>Good choices,<br /><em>gathered.</em></h2></div><span className="cart-summary">{items.length} {items.length === 1 ? 'piece' : 'pieces'}</span></div>{items.length === 0 ? <div className="cart-empty"><p className="muted">Nothing here yet. The edit is full of possibilities.</p><Link to="/products" className="text-link">Browse the edit</Link></div> : <div className="cart-layout"><div className="cart-items">{items.map((item, index) => <article className="cart-item" key={item.productId}><div className={`cart-thumb product-image-${index % 3}`} /><div className="cart-item-info"><span className="product-category">In your edit</span><h3>{item.name}</h3><span className="muted">${item.price} each</span></div><div className="quantity-control"><button onClick={() => updateQuantity(item.productId, item.quantity - 1)} aria-label={`Decrease ${item.name} quantity`}>−</button><span>{item.quantity}</span><button onClick={() => updateQuantity(item.productId, item.quantity + 1)} aria-label={`Increase ${item.name} quantity`}>+</button></div><strong>${item.subtotal}</strong><button className="remove-item" onClick={() => removeItem(item.productId)}>Remove</button></article>)}</div><aside className="cart-total"><span className="eyebrow">Order preview</span><div><span>Subtotal</span><strong>${total.toFixed(2)}</strong></div><p>Shipping and taxes are calculated at checkout.</p><button className="btn-primary" onClick={placeOrder}>Place order <span>→</span></button></aside></div>}</section>
 }
 
 function WishlistPage() {
