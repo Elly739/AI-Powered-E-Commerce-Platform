@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom'
 import './index.css'
+import Button from './components/ui/Button'
+import EmptyState from './components/ui/EmptyState'
+import Input from './components/ui/Input'
+import LoadingSpinner from './components/ui/LoadingSpinner'
+import ProductCard from './components/ui/ProductCard'
 
 /* eslint-disable react/prop-types */
 
@@ -56,12 +61,12 @@ function AuthPage({ mode, onAuthenticated }) {
         <h1>{isLogin ? 'Pick up where you left off.' : 'Make shopping feel personal.'}</h1>
         <p className="muted">{isLogin ? 'Use your account details to continue.' : 'It takes less than a minute to get started.'}</p>
         {!isLogin && (
-          <label>Full name<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Avery Morgan" /></label>
+          <Input label="Full name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Avery Morgan" />
         )}
-        <label>Email<input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="you@example.com" /></label>
-        <label>Password<input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="At least 8 characters" /></label>
+        <Input label="Email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="you@example.com" />
+        <Input label="Password" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="At least 8 characters" />
         {error && <p className="form-error">{error}</p>}
-        <button className="btn-primary" type="submit" disabled={submitting}>{submitting ? 'Working...' : isLogin ? 'Sign in' : 'Create account'} <span>→</span></button>
+        <Button type="submit" loading={submitting}>{isLogin ? 'Sign in' : 'Create account'} <span>→</span></Button>
         <p className="auth-switch">{isLogin ? 'New here?' : 'Already have an account?'} <Link to={isLogin ? '/register' : '/login'}>{isLogin ? 'Create an account' : 'Sign in'}</Link></p>
       </form>
     </section>
@@ -89,7 +94,7 @@ function Dashboard({ user, onLogout }) {
     <section className="dashboard">
       <div className="dashboard-heading">
         <div><span className="eyebrow">Your account</span><h2>Good to see you, {user.name.split(' ')[0]}.</h2><p className="dashboard-email">{user.email}</p></div>
-        <button className="btn-secondary" onClick={onLogout}>Sign out</button>
+        <Button variant="secondary" onClick={onLogout}>Sign out</Button>
       </div>
       <div className="dashboard-grid">
         <article className="stat-card"><span>Profile signal</span><strong>Getting clearer</strong><p>We are learning what makes your taste tick.</p></article>
@@ -130,10 +135,10 @@ function ProductsPage() {
   return (
     <section className="products-page container-main">
       <div className="products-heading"><div><span className="eyebrow">The current edit</span><h2>Useful things,<br /><em>chosen well.</em></h2></div><label className="search-field">Search the edit<input value={search} onChange={(event) => { setSearch(event.target.value); setLoading(true) }} placeholder="Try “lamp”" /></label></div>
-      {loading && <p className="muted">Finding the right things...</p>}
+      {loading && <LoadingSpinner label="Finding the right things..." />}
       {error && <p className="form-error">{error} Is the backend running on port 5000?</p>}
-      {!loading && !error && <div className="product-grid">{products.map((product, index) => <Link to={`/products/${product.id}`} className="product-card" key={product.id}><div className={`product-image product-image-${index % 3}`}><span>{String(index + 1).padStart(2, '0')}</span><span className="view-label">View piece ↗</span></div><div className="product-meta"><div><span className="product-category">{product.categoryName}</span><h3>{product.name}</h3></div><strong>${product.price}</strong></div><p>{product.description}</p></Link>)}</div>}
-      {!loading && !error && products.length === 0 && <p className="muted">No pieces matched that search.</p>}
+      {!loading && !error && <div className="product-grid">{products.map((product, index) => <ProductCard product={product} index={index} key={product.id} />)}</div>}
+      {!loading && !error && products.length === 0 && <EmptyState title="No pieces matched that search." message="Try a broader search or return to the full edit." actionLabel="Clear the search" actionTo="/products" />}
     </section>
   )
 }
