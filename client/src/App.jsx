@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import './index.css'
 import Button from './components/ui/Button'
 import EmptyState from './components/ui/EmptyState'
@@ -108,7 +108,8 @@ function Dashboard({ user, onLogout }) {
 
 function ProductsPage() {
   const [products, setProducts] = useState([])
-  const [search, setSearch] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const search = searchParams.get('search') || ''
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -134,7 +135,7 @@ function ProductsPage() {
 
   return (
     <section className="products-page container-main">
-      <div className="products-heading"><div><span className="eyebrow">The current edit</span><h2>Useful things,<br /><em>chosen well.</em></h2></div><label className="search-field">Search the edit<input value={search} onChange={(event) => { setSearch(event.target.value); setLoading(true) }} placeholder="Try “lamp”" /></label></div>
+      <div className="products-heading"><div><span className="eyebrow">The current edit</span><h2>Useful things,<br /><em>chosen well.</em></h2></div><label className="search-field">Search the edit<input value={search} onChange={(event) => { const value = event.target.value; setSearchParams(value ? { search: value } : {}); setLoading(true) }} placeholder="Try “lamp”" /></label></div>
       {loading && <LoadingSpinner label="Finding the right things..." />}
       {error && <p className="form-error">{error} Is the backend running on port 5000?</p>}
       {!loading && !error && <div className="product-grid">{products.map((product, index) => <ProductCard product={product} index={index} key={product.id} />)}</div>}
@@ -275,6 +276,25 @@ function AdminPage() {
   return <section className="admin-page container-main"><div className="admin-heading"><div><span className="eyebrow">Admin studio</span><h2>Shape the<br /><em>next edit.</em></h2></div><span className="cart-summary">{products.length} live products</span></div><div className="admin-layout"><form className="admin-form" onSubmit={createProduct}><h3>Add a product</h3><label>Name<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /></label><label>Slug<input value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} placeholder="unique-product-slug" required /></label><label>Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label><div className="admin-form-row"><label>Price<input type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} required /></label><label>Stock<input type="number" min="0" value={form.stockQuantity} onChange={(event) => setForm({ ...form, stockQuantity: event.target.value })} required /></label></div><button className="btn-primary" type="submit">Publish product <span>→</span></button>{message && <p className="muted">{message}</p>}</form><div className="admin-list"><span className="eyebrow">Live catalog</span>{products.map((product) => <div className="admin-product" key={product.id}><div><strong>{product.name}</strong><span>{product.categoryName || 'Uncategorized'}</span></div><span>${product.price} / {product.stockQuantity} in stock</span></div>)}</div></div></section>
 }
 
+function AssistantPage() {
+  return <section className="assistant-page container-main"><span className="eyebrow">Aster intelligence</span><h2>A more thoughtful<br /><em>way to browse.</em></h2><p className="muted">The shopping assistant is being prepared to help you find products by need, budget, and personal taste.</p><Link to="/products" className="btn-primary">Browse the current edit <span>→</span></Link></section>
+}
+
+function SiteHeader({ user }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const submitSearch = (event) => {
+    event.preventDefault()
+    navigate(search.trim() ? `/products?search=${encodeURIComponent(search.trim())}` : '/products')
+    setMenuOpen(false)
+  }
+
+  return <header className="site-header"><nav className="container-main nav-bar"><button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}>{menuOpen ? '×' : '☰'}</button><Link to="/" className="brand"><span className="brand-mark">A</span> Aster & Co.</Link><form className="global-search" onSubmit={submitSearch}><span>⌕</span><input aria-label="Search products" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search the edit" /></form><div className={`nav-links ${menuOpen ? 'nav-links-open' : ''}`}><Link to="/products" onClick={() => setMenuOpen(false)}>Discover</Link><Link to="/assistant" className="assistant-link" onClick={() => setMenuOpen(false)}>Ask the edit</Link><Link to="/wishlist" className="saved-link" onClick={() => setMenuOpen(false)}>Saved</Link><Link to="/cart" onClick={() => setMenuOpen(false)}>Cart <span className="cart-count">0</span></Link>{user ? <><Link to="/admin" className={user.role === 'admin' ? '' : 'hidden-link'} onClick={() => setMenuOpen(false)}>Studio</Link><Link to="/dashboard" className="profile-link" onClick={() => setMenuOpen(false)}>{user.name.charAt(0)}</Link></> : <Link to="/login" className="nav-cta" onClick={() => setMenuOpen(false)}>Sign in</Link>}</div></nav>{location.pathname === '/' && <div className="mobile-search container-main"><form className="global-search" onSubmit={submitSearch}><span>⌕</span><input aria-label="Search products" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products" /></form></div>}</header>
+}
+
 function App() {
   const [user, setUser] = useState(() => normalizeUser(JSON.parse(localStorage.getItem('ecommerce_user') || 'null')))
 
@@ -314,12 +334,7 @@ function App() {
   return (
     <Router>
       <div className="app-shell">
-        <header className="site-header">
-          <nav className="container-main nav-bar">
-            <Link to="/" className="brand"><span className="brand-mark">A</span> Aster & Co.</Link>
-            <div className="nav-links"><Link to="/products">Discover</Link><Link to="/cart">Cart <span className="cart-count">0</span></Link>{user ? <><Link to="/wishlist">Saved</Link>{user.role === 'admin' && <Link to="/admin">Studio</Link>}<Link to="/dashboard" className="profile-link">{user.name.charAt(0)}</Link></> : <Link to="/login" className="nav-cta">Sign in</Link>}</div>
-          </nav>
-        </header>
+        <SiteHeader user={user} />
 
         <main>
           <Routes>
@@ -332,6 +347,7 @@ function App() {
             <Route path="/cart" element={<CartPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/admin" element={user?.role === 'admin' ? <AdminPage /> : <Navigate to="/" replace />} />
+            <Route path="/assistant" element={<AssistantPage />} />
           </Routes>
         </main>
 
