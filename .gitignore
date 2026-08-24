@@ -55,3 +55,6 @@ database.db
 .cache/
 .next/
 .turbo/
+
+# Kilo
+.kilo/

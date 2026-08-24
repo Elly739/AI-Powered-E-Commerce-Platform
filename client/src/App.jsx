@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowRight, Check, Heart, LayoutDashboard, Menu, Minus, Plus, Search, ShoppingBag, Sparkles, Trash2, User, X } from 'lucide-react'
+import { ArrowRight, Bot, Check, Heart, LayoutDashboard, Menu, Minus, Plus, Search, Send, ShoppingBag, Sparkles, Trash2, User, X } from 'lucide-react'
 import './index.css'
 import Button from './components/ui/Button'
 import EmptyState from './components/ui/EmptyState'
@@ -278,7 +278,56 @@ function AdminPage() {
 }
 
 function AssistantPage() {
-  return <section className="assistant-page container-main"><div><span className="eyebrow">Aster intelligence</span><h2>A more thoughtful<br /><em>way to browse.</em></h2><p className="muted">The shopping assistant is being prepared to help you find products by need, budget, and personal taste.</p><Link to="/products" className="btn-primary">Browse the current edit <ArrowRight size={16} /></Link></div></section>
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      text: 'Tell me what you are shopping for: a budget, a room, a routine, or a person. I will narrow the edit and explain why each piece fits.',
+      recommendations: [],
+      quickReplies: ['Gift under $50', 'For my desk', 'Daily rituals', 'In stock only'],
+    },
+  ])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const askAssistant = async (prompt) => {
+    const message = prompt.trim()
+    if (!message || loading) return
+    setInput('')
+    setError('')
+    setMessages((current) => [...current, { role: 'user', text: message, recommendations: [], quickReplies: [] }])
+    setLoading(true)
+    try {
+      const token = localStorage.getItem('ecommerce_token')
+      const response = await fetch('http://localhost:5000/api/assistant/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ message }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.message || result.error || 'The assistant is unavailable.')
+      setMessages((current) => [...current, {
+        role: 'assistant',
+        text: result.data.response,
+        recommendations: result.data.recommendations || [],
+        quickReplies: result.data.quickReplies || [],
+      }])
+    } catch (requestError) {
+      setError(`${requestError.message} Is the backend running on port 5000?`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const submit = (event) => {
+    event.preventDefault()
+    askAssistant(input)
+  }
+
+  return <section className="assistant-page container-main"><div className="assistant-intro"><span className="eyebrow">Aster intelligence</span><h2>A more thoughtful<br /><em>way to browse.</em></h2><p className="muted">Ask by budget, use case, room, or mood. The assistant searches the live catalog and returns linked products with reasons.</p><div className="prompt-chips">{messages[0]?.quickReplies?.length ? messages[0].quickReplies.map((prompt) => <button key={prompt} onClick={() => askAssistant(prompt)} disabled={loading}>{prompt}</button>) : null}</div></div><div className="assistant-console" aria-label="Shopping assistant chat"><div className="assistant-toolbar"><span><Bot size={16} /> Shopping assistant</span><Link to="/products" className="text-link">Browse catalog</Link></div><div className="message-list">{messages.map((message, messageIndex) => <article className={`message-bubble message-${message.role}`} key={`${message.role}-${messageIndex}`}><p>{message.text}</p>{message.recommendations?.length > 0 && <div className="assistant-products">{message.recommendations.map((product, index) => <div className="assistant-product-wrap" key={product.id}><ProductCard product={product} index={index} /><span>{product.reason}</span></div>)}</div>}{message.quickReplies?.length > 0 && messageIndex > 0 && <div className="prompt-chips prompt-chips-inline">{message.quickReplies.map((prompt) => <button key={prompt} onClick={() => askAssistant(prompt)} disabled={loading}>{prompt}</button>)}</div>}</article>)}{loading && <div className="loading-state assistant-loading"><span className="loading-spinner" /><span>Finding the best matches...</span></div>}{error && <p className="form-error">{error}</p>}</div><form className="assistant-input" onSubmit={submit}><input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Try “something useful for a home office under $100”" aria-label="Ask the shopping assistant" /><button className="btn-primary" type="submit" disabled={loading || !input.trim()}><Send size={16} /><span>Ask</span></button></form></div></section>
 }
 
 function SiteHeader({ user }) {

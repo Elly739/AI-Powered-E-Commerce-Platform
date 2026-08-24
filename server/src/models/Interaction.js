@@ -16,3 +16,11 @@ export const initializeInteractionTable = async () => {
 export const recordInteraction = async (userId, productId, interactionType, metadata = {}) => {
   await pool.query(`INSERT INTO user_product_interactions (user_id, product_id, interaction_type, metadata) VALUES ($1, $2, $3, $4)`, [userId || null, productId, interactionType, metadata])
 }
+
+export const getRecentInteractionProductIds = async (userId, type = 'viewed', limit = 20) => {
+  const { rows } = await pool.query(
+    `SELECT product_id FROM user_product_interactions WHERE user_id = $1 AND interaction_type = $2 ORDER BY created_at DESC LIMIT $3`,
+    [userId, type, limit]
+  )
+  return rows.map((row) => row.product_id)
+}

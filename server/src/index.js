@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
 import dotenv from 'dotenv'
-import { authRoutes, cartRoutes, interactionRoutes, orderRoutes, productRoutes, reviewRoutes, wishlistRoutes } from './routes/index.js'
+import { assistantRoutes, authRoutes, cartRoutes, interactionRoutes, orderRoutes, productRoutes, reviewRoutes, wishlistRoutes } from './routes/index.js'
 import { initializeUsersTable } from './models/User.js'
 import { initializeProductTables } from './models/Product.js'
 import { initializeCartTable } from './models/Cart.js'
@@ -43,9 +43,8 @@ app.use('/api/interactions', interactionRoutes)
 
 app.use('/api/orders', orderRoutes)
 
-app.use('/api/chat', (req, res) => {
-  res.json({ message: 'Chat routes - Phase 8' })
-})
+app.use('/api/assistant', assistantRoutes)
+app.use('/api/chat', assistantRoutes)
 
 // 404 handler
 app.use((req, res) => {
