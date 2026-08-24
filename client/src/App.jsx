@@ -123,6 +123,7 @@ function ProductDetailPage() {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [added, setAdded] = useState(false)
   const productId = window.location.pathname.split('/').pop()
 
   useEffect(() => {
@@ -139,7 +140,46 @@ function ProductDetailPage() {
   if (loading) return <section className="detail-state container-main"><p className="muted">Opening the piece...</p></section>
   if (error) return <section className="detail-state container-main"><p className="form-error">{error}</p><Link to="/products" className="text-link">Back to the edit</Link></section>
 
-  return <section className="product-detail container-main"><Link to="/products" className="back-link">← Back to the edit</Link><div className="detail-layout"><div className="detail-image product-image-0"><span>01 / {product.categoryName}</span></div><div className="detail-copy"><span className="eyebrow">{product.categoryName}</span><h2>{product.name}</h2><strong className="detail-price">${product.price}</strong><p>{product.description}</p><div className="stock-row"><span className="stock-dot" />{product.stockQuantity > 0 ? `${product.stockQuantity} ready to ship` : 'Currently sold out'}</div><button className="btn-primary" disabled={product.stockQuantity === 0}>Add to cart <span>+</span></button><div className="detail-note"><strong>A considered choice</strong><span>Every piece in the edit is selected for how it earns its place in your everyday.</span></div></div></div></section>
+  const addToCart = async () => {
+    const token = localStorage.getItem('ecommerce_token')
+    if (!token) return window.location.assign('/login')
+    const response = await fetch('http://localhost:5000/api/cart', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: product.id, quantity: 1 }) })
+    if (response.ok) setAdded(true)
+  }
+
+  return <section className="product-detail container-main"><Link to="/products" className="back-link">← Back to the edit</Link><div className="detail-layout"><div className="detail-image product-image-0"><span>01 / {product.categoryName}</span></div><div className="detail-copy"><span className="eyebrow">{product.categoryName}</span><h2>{product.name}</h2><strong className="detail-price">${product.price}</strong><p>{product.description}</p><div className="stock-row"><span className="stock-dot" />{product.stockQuantity > 0 ? `${product.stockQuantity} ready to ship` : 'Currently sold out'}</div><button className="btn-primary" onClick={addToCart} disabled={product.stockQuantity === 0}>{added ? 'Added to cart' : 'Add to cart'} <span>{added ? '✓' : '+'}</span></button><div className="detail-note"><strong>A considered choice</strong><span>Every piece in the edit is selected for how it earns its place in your everyday.</span></div></div></div></section>
+}
+
+function CartPage() {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const token = localStorage.getItem('ecommerce_token')
+
+  const loadCart = () => fetch('http://localhost:5000/api/cart', { headers: { Authorization: `Bearer ${token}` } }).then((response) => {
+    if (!response.ok) throw new Error('Sign in to see your saved cart.')
+    return response.json()
+  }).then((result) => setItems(result.data)).catch((requestError) => setError(requestError.message)).finally(() => setLoading(false))
+
+  useEffect(() => { if (token) loadCart(); else setLoading(false) }, [])
+
+  const updateQuantity = async (productId, quantity) => {
+    if (quantity < 1) return removeItem(productId)
+    await fetch(`http://localhost:5000/api/cart/${productId}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ quantity }) })
+    loadCart()
+  }
+
+  const removeItem = async (productId) => {
+    await fetch(`http://localhost:5000/api/cart/${productId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+    loadCart()
+  }
+
+  if (!token) return <section className="cart-page container-main"><span className="eyebrow">Your cart</span><h2>A little room<br /><em>for good things.</em></h2><p className="muted">Sign in to keep your cart with you wherever you go.</p><Link to="/login" className="btn-primary">Sign in to continue <span>→</span></Link></section>
+  if (loading) return <section className="cart-page container-main"><p className="muted">Gathering your saved pieces...</p></section>
+  if (error) return <section className="cart-page container-main"><p className="form-error">{error}</p></section>
+
+  const total = items.reduce((sum, item) => sum + Number(item.subtotal), 0)
+  return <section className="cart-page container-main"><div className="cart-heading"><div><span className="eyebrow">Your cart</span><h2>Good choices,<br /><em>gathered.</em></h2></div><span className="cart-summary">{items.length} {items.length === 1 ? 'piece' : 'pieces'}</span></div>{items.length === 0 ? <div className="cart-empty"><p className="muted">Nothing here yet. The edit is full of possibilities.</p><Link to="/products" className="text-link">Browse the edit</Link></div> : <div className="cart-layout"><div className="cart-items">{items.map((item, index) => <article className="cart-item" key={item.productId}><div className={`cart-thumb product-image-${index % 3}`} /><div className="cart-item-info"><span className="product-category">In your edit</span><h3>{item.name}</h3><span className="muted">${item.price} each</span></div><div className="quantity-control"><button onClick={() => updateQuantity(item.productId, item.quantity - 1)} aria-label={`Decrease ${item.name} quantity`}>−</button><span>{item.quantity}</span><button onClick={() => updateQuantity(item.productId, item.quantity + 1)} aria-label={`Increase ${item.name} quantity`}>+</button></div><strong>${item.subtotal}</strong><button className="remove-item" onClick={() => removeItem(item.productId)}>Remove</button></article>)}</div><aside className="cart-total"><span className="eyebrow">Order preview</span><div><span>Subtotal</span><strong>${total.toFixed(2)}</strong></div><p>Shipping and taxes are calculated at checkout.</p><button className="btn-primary" disabled>Continue to checkout <span>→</span></button></aside></div>}</section>
 }
 
 function App() {
@@ -195,7 +235,7 @@ function App() {
             <Route path="/dashboard" element={user ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
-            <Route path="/cart" element={<Placeholder title="Your cart is waiting for a first find." />} />
+            <Route path="/cart" element={<CartPage />} />
           </Routes>
         </main>
 
@@ -219,10 +259,6 @@ function HomePage() {
       <section className="value-strip container-main"><div><strong>Curated, not crowded</strong><span>A smaller edit with more intention.</span></div><div><strong>Recommendations with memory</strong><span>Built around your evolving taste.</span></div><div><strong>Made for real life</strong><span>Useful things, beautifully chosen.</span></div></section>
     </div>
   )
-}
-
-function Placeholder({ title }) {
-  return <section className="placeholder container-main"><span className="eyebrow">Coming next</span><h2>{title}</h2><Link to="/" className="text-link">Back to the home edit</Link></section>
 }
 
 export default App

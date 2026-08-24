@@ -2,9 +2,10 @@ import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
 import dotenv from 'dotenv'
-import { authRoutes, productRoutes } from './routes/index.js'
+import { authRoutes, cartRoutes, productRoutes } from './routes/index.js'
 import { initializeUsersTable } from './models/User.js'
 import { initializeProductTables } from './models/Product.js'
+import { initializeCartTable } from './models/Cart.js'
 
 dotenv.config()
 
@@ -31,9 +32,7 @@ app.use('/api/auth', authRoutes)
 
 app.use('/api/products', productRoutes)
 
-app.use('/api/cart', (req, res) => {
-  res.json({ message: 'Cart routes - Phase 4' })
-})
+app.use('/api/cart', cartRoutes)
 
 app.use('/api/orders', (req, res) => {
   res.json({ message: 'Order routes - Phase 5' })
@@ -67,6 +66,8 @@ app.listen(PORT, async () => {
     console.log('✅ Users table ready')
     await initializeProductTables()
     console.log('✅ Product catalog ready')
+    await initializeCartTable()
+    console.log('✅ Cart table ready')
   } catch (error) {
     console.error('⚠️ Users table unavailable:', error.message)
   }
