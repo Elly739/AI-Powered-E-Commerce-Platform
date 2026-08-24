@@ -102,10 +102,33 @@ function ProductsPage() {
       <div className="products-heading"><div><span className="eyebrow">The current edit</span><h2>Useful things,<br /><em>chosen well.</em></h2></div><label className="search-field">Search the edit<input value={search} onChange={(event) => { setSearch(event.target.value); setLoading(true) }} placeholder="Try “lamp”" /></label></div>
       {loading && <p className="muted">Finding the right things...</p>}
       {error && <p className="form-error">{error} Is the backend running on port 5000?</p>}
-      {!loading && !error && <div className="product-grid">{products.map((product, index) => <article className="product-card" key={product.id}><div className={`product-image product-image-${index % 3}`}><span>{String(index + 1).padStart(2, '0')}</span></div><div className="product-meta"><div><span className="product-category">{product.categoryName}</span><h3>{product.name}</h3></div><strong>${product.price}</strong></div><p>{product.description}</p></article>)}</div>}
+      {!loading && !error && <div className="product-grid">{products.map((product, index) => <Link to={`/products/${product.id}`} className="product-card" key={product.id}><div className={`product-image product-image-${index % 3}`}><span>{String(index + 1).padStart(2, '0')}</span><span className="view-label">View piece ↗</span></div><div className="product-meta"><div><span className="product-category">{product.categoryName}</span><h3>{product.name}</h3></div><strong>${product.price}</strong></div><p>{product.description}</p></Link>)}</div>}
       {!loading && !error && products.length === 0 && <p className="muted">No pieces matched that search.</p>}
     </section>
   )
+}
+
+function ProductDetailPage() {
+  const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const productId = window.location.pathname.split('/').pop()
+
+  useEffect(() => {
+    fetch(`http://localhost:5000/api/products/${productId}`)
+      .then((response) => {
+        if (!response.ok) throw new Error('This piece could not be found.')
+        return response.json()
+      })
+      .then((result) => setProduct(result.data))
+      .catch((requestError) => setError(requestError.message))
+      .finally(() => setLoading(false))
+  }, [productId])
+
+  if (loading) return <section className="detail-state container-main"><p className="muted">Opening the piece...</p></section>
+  if (error) return <section className="detail-state container-main"><p className="form-error">{error}</p><Link to="/products" className="text-link">Back to the edit</Link></section>
+
+  return <section className="product-detail container-main"><Link to="/products" className="back-link">← Back to the edit</Link><div className="detail-layout"><div className="detail-image product-image-0"><span>01 / {product.categoryName}</span></div><div className="detail-copy"><span className="eyebrow">{product.categoryName}</span><h2>{product.name}</h2><strong className="detail-price">${product.price}</strong><p>{product.description}</p><div className="stock-row"><span className="stock-dot" />{product.stockQuantity > 0 ? `${product.stockQuantity} ready to ship` : 'Currently sold out'}</div><button className="btn-primary" disabled={product.stockQuantity === 0}>Add to cart <span>+</span></button><div className="detail-note"><strong>A considered choice</strong><span>Every piece in the edit is selected for how it earns its place in your everyday.</span></div></div></div></section>
 }
 
 function App() {
@@ -128,6 +151,7 @@ function App() {
             <Route path="/register" element={<AuthPage mode="register" onAuthenticated={setUser} />} />
             <Route path="/dashboard" element={user ? <Dashboard user={user} onLogout={() => setUser(null)} /> : <Navigate to="/login" replace />} />
             <Route path="/products" element={<ProductsPage />} />
+            <Route path="/products/:id" element={<ProductDetailPage />} />
             <Route path="/cart" element={<Placeholder title="Your cart is waiting for a first find." />} />
           </Routes>
         </main>
