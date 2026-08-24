@@ -4,18 +4,14 @@ import './index.css'
 
 /* eslint-disable react/prop-types */
 
-const demoUser = {
-  name: 'Avery Morgan',
-  email: 'avery@example.com',
-}
-
 function AuthPage({ mode, onAuthenticated }) {
   const isLogin = mode === 'login'
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
 
@@ -24,11 +20,26 @@ function AuthPage({ mode, onAuthenticated }) {
       return
     }
 
-    onAuthenticated({
-      name: isLogin ? demoUser.name : form.name,
-      email: form.email,
-    })
-    navigate('/dashboard')
+    setSubmitting(true)
+    try {
+      const endpoint = isLogin ? 'login' : 'register'
+      const payload = isLogin
+        ? { email: form.email, password: form.password }
+        : { email: form.email, password: form.password, fullName: form.name }
+      const response = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.message || 'Authentication failed.')
+      onAuthenticated(result.data.user, result.data.token)
+      navigate('/dashboard')
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -48,7 +59,7 @@ function AuthPage({ mode, onAuthenticated }) {
         <label>Email<input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="you@example.com" /></label>
         <label>Password<input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="At least 8 characters" /></label>
         {error && <p className="form-error">{error}</p>}
-        <button className="btn-primary" type="submit">{isLogin ? 'Sign in' : 'Create account'} <span>→</span></button>
+        <button className="btn-primary" type="submit" disabled={submitting}>{submitting ? 'Working...' : isLogin ? 'Sign in' : 'Create account'} <span>→</span></button>
         <p className="auth-switch">{isLogin ? 'New here?' : 'Already have an account?'} <Link to={isLogin ? '/register' : '/login'}>{isLogin ? 'Create an account' : 'Sign in'}</Link></p>
       </form>
     </section>
@@ -132,7 +143,39 @@ function ProductDetailPage() {
 }
 
 function App() {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('ecommerce_user') || 'null'))
+
+  useEffect(() => {
+    const token = localStorage.getItem('ecommerce_token')
+    if (!token) return
+
+    fetch('http://localhost:5000/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then((response) => {
+        if (!response.ok) throw new Error('Session expired')
+        return response.json()
+      })
+      .then((result) => {
+        localStorage.setItem('ecommerce_user', JSON.stringify(result.data))
+        setUser(result.data)
+      })
+      .catch(() => {
+        localStorage.removeItem('ecommerce_user')
+        localStorage.removeItem('ecommerce_token')
+        setUser(null)
+      })
+  }, [])
+
+  const handleAuthenticated = (authenticatedUser, token) => {
+    localStorage.setItem('ecommerce_user', JSON.stringify(authenticatedUser))
+    localStorage.setItem('ecommerce_token', token)
+    setUser(authenticatedUser)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('ecommerce_user')
+    localStorage.removeItem('ecommerce_token')
+    setUser(null)
+  }
 
   return (
     <Router>
@@ -147,9 +190,9 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<AuthPage mode="login" onAuthenticated={setUser} />} />
-            <Route path="/register" element={<AuthPage mode="register" onAuthenticated={setUser} />} />
-            <Route path="/dashboard" element={user ? <Dashboard user={user} onLogout={() => setUser(null)} /> : <Navigate to="/login" replace />} />
+            <Route path="/login" element={<AuthPage mode="login" onAuthenticated={handleAuthenticated} />} />
+            <Route path="/register" element={<AuthPage mode="register" onAuthenticated={handleAuthenticated} />} />
+            <Route path="/dashboard" element={user ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
             <Route path="/cart" element={<Placeholder title="Your cart is waiting for a first find." />} />
