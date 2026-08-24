@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom'
 import './index.css'
 
@@ -71,6 +71,43 @@ function Dashboard({ user, onLogout }) {
   )
 }
 
+function ProductsPage() {
+  const [products, setProducts] = useState([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const loadProducts = async () => {
+      try {
+        const query = search ? `?search=${encodeURIComponent(search)}` : ''
+        const response = await fetch(`http://localhost:5000/api/products${query}`, { signal: controller.signal })
+        if (!response.ok) throw new Error('Could not load the collection.')
+        const result = await response.json()
+        setProducts(result.data)
+        setError('')
+      } catch (requestError) {
+        if (requestError.name !== 'AbortError') setError(requestError.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadProducts()
+    return () => controller.abort()
+  }, [search])
+
+  return (
+    <section className="products-page container-main">
+      <div className="products-heading"><div><span className="eyebrow">The current edit</span><h2>Useful things,<br /><em>chosen well.</em></h2></div><label className="search-field">Search the edit<input value={search} onChange={(event) => { setSearch(event.target.value); setLoading(true) }} placeholder="Try “lamp”" /></label></div>
+      {loading && <p className="muted">Finding the right things...</p>}
+      {error && <p className="form-error">{error} Is the backend running on port 5000?</p>}
+      {!loading && !error && <div className="product-grid">{products.map((product, index) => <article className="product-card" key={product.id}><div className={`product-image product-image-${index % 3}`}><span>{String(index + 1).padStart(2, '0')}</span></div><div className="product-meta"><div><span className="product-category">{product.categoryName}</span><h3>{product.name}</h3></div><strong>${product.price}</strong></div><p>{product.description}</p></article>)}</div>}
+      {!loading && !error && products.length === 0 && <p className="muted">No pieces matched that search.</p>}
+    </section>
+  )
+}
+
 function App() {
   const [user, setUser] = useState(null)
 
@@ -90,7 +127,7 @@ function App() {
             <Route path="/login" element={<AuthPage mode="login" onAuthenticated={setUser} />} />
             <Route path="/register" element={<AuthPage mode="register" onAuthenticated={setUser} />} />
             <Route path="/dashboard" element={user ? <Dashboard user={user} onLogout={() => setUser(null)} /> : <Navigate to="/login" replace />} />
-            <Route path="/products" element={<Placeholder title="The collection is coming into focus." />} />
+            <Route path="/products" element={<ProductsPage />} />
             <Route path="/cart" element={<Placeholder title="Your cart is waiting for a first find." />} />
           </Routes>
         </main>
