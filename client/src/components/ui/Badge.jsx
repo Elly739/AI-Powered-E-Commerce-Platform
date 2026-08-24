@@ -1,3 +1,5 @@
-export default function Badge({ children, tone = 'neutral' }) {
-  return <span className={`status-badge status-${tone}`}>{children}</span>
+/* eslint-disable react/prop-types */
+
+export default function Badge({ children, tone = 'neutral', className = '' }) {
+  return <span className={`status-badge status-${tone} ${className}`}>{children}</span>
 }

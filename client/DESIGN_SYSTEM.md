@@ -2,7 +2,9 @@
 
 ## Product Direction
 
-Aster & Co. is a considered commerce experience: warm, editorial, useful, and easy to scan. The interface should feel personal without becoming precious. Product information and actions stay clear even when the visual language is expressive.
+Aster & Co. is a considered commerce experience with a real transactional loop: discovery, account, wishlist, cart, checkout, orders, admin catalog, and AI guidance should feel connected. The UI should be editorial and tactile, but still built for shopping decisions: product identity, price, stock, save state, cart actions, and next steps stay visible without depending on hover.
+
+The app should not read as a generic SaaS template or a basic Tailwind storefront. Use restrained commerce density, real editorial imagery, strong typography, compact metadata, and familiar icon-led controls to make the experience feel intentional.
 
 ## Visual Tokens
 
@@ -10,23 +12,25 @@ Aster & Co. is a considered commerce experience: warm, editorial, useful, and ea
 
 | Token | Value | Use |
 |---|---|---|
-| `ink` | `#17241f` | Primary text, navigation, strong controls |
-| `paper` | `#f4f0e8` | Global canvas |
+| `ink` | `#141917` | Primary text, navigation, strong controls |
+| `paper` | `#f6f3ec` | Global canvas |
 | `surface` | `#fffdf8` | Forms, summaries, framed content |
-| `clay` | `#d56743` | Accent, primary action, status emphasis |
-| `clay-dark` | `#b95031` | Accent hover |
-| `sage` | `#d7ddd0` | Secondary visual field, quiet highlights |
-| `muted` | `#59655e` | Supporting text |
-| `line` | `rgba(23, 36, 31, .18)` | Dividers and field borders |
-| `success` | `#71866e` | Available/in-stock state |
-| `danger` | `#b95031` | Validation and destructive feedback |
+| `accent` | `#c65332` | Primary action, selected state, meaningful emphasis |
+| `accent-dark` | `#9d3d25` | Accent hover and pressed state |
+| `moss` | `#617464` | Profile, account, and quiet identity surfaces |
+| `plum` | `#5b3f4d` | Rich secondary highlight for saved/account surfaces |
+| `gold` | `#b88735` | Ratings and review sentiment |
+| `muted` | `#667068` | Supporting text |
+| `line` | `rgba(20, 25, 23, .16)` | Dividers and field borders |
+| `success` | `#4f704d` | Available/in-stock state |
+| `danger` | `#a83f2d` | Validation and destructive feedback |
 
-Use color to establish hierarchy, not decoration. Clay is reserved for actions, selected states, and meaningful emphasis.
+Use color to establish hierarchy, not decoration. Accent is reserved for primary actions, selected states, and meaningful emphasis. Avoid one-note beige, blue, purple, or clay-only screens by balancing warm paper with ink, moss, plum, gold, and real imagery.
 
 ### Typography
 
 - Display: `Georgia`, `Times New Roman`, serif
-- Interface: `Arial`, sans-serif
+- Interface: `Inter`, `Arial`, sans-serif
 - Display headings: regular weight, tight line height, no negative letter spacing beyond the existing editorial treatment
 - Interface labels: 10-13px, uppercase only for short metadata labels
 - Body copy: 13-16px, line height 1.5-1.6
@@ -34,10 +38,11 @@ Use color to establish hierarchy, not decoration. Clay is reserved for actions, 
 ### Shape and Depth
 
 - Primary action radius: pill
-- Content framing: square or subtle radius, never nested cards
+- Content framing: 8px radius or less, never nested cards
 - Dividers: 1px using `line`
-- Shadows: reserved for elevated forms and key visual compositions; avoid shadow on every card
+- Shadows: reserved for elevated forms, summaries, and key visual compositions; avoid shadow on every card
 - Stable media: use `aspect-ratio` for product visuals and thumbnails
+- Product and hero surfaces must use real/editorial bitmap imagery or product media, not abstract placeholder art
 
 ### Spacing
 
@@ -70,9 +75,11 @@ Components own states and accessibility. Pages compose them and should not recre
 - Every async action has idle, loading, success, and failure feedback.
 - Disabled actions explain their state through nearby text or a status label.
 - Product cards make name, price, availability, and primary destination visible without hover.
+- Product cards include stock, rating, save affordance, and visible price metadata.
 - Wishlist uses a persistent selected state, not a transient click-only response.
 - Cart count is visible in the global header on every viewport.
 - Search, filter, and sort controls preserve the current result context.
+- Use familiar icons for search, menu, cart, wishlist, quantity, delete, dashboard, and forward actions.
 - Never use color alone to communicate availability or validation.
 - Focus rings must remain visible for keyboard users.
 
