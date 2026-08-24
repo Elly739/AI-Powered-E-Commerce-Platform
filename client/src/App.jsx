@@ -126,6 +126,7 @@ function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [added, setAdded] = useState(false)
+  const [saved, setSaved] = useState(false)
   const productId = window.location.pathname.split('/').pop()
 
   useEffect(() => {
@@ -149,7 +150,14 @@ function ProductDetailPage() {
     if (response.ok) setAdded(true)
   }
 
-  return <section className="product-detail container-main"><Link to="/products" className="back-link">← Back to the edit</Link><div className="detail-layout"><div className="detail-image product-image-0"><span>01 / {product.categoryName}</span></div><div className="detail-copy"><span className="eyebrow">{product.categoryName}</span><h2>{product.name}</h2><strong className="detail-price">${product.price}</strong><p>{product.description}</p><div className="stock-row"><span className="stock-dot" />{product.stockQuantity > 0 ? `${product.stockQuantity} ready to ship` : 'Currently sold out'}</div><button className="btn-primary" onClick={addToCart} disabled={product.stockQuantity === 0}>{added ? 'Added to cart' : 'Add to cart'} <span>{added ? '✓' : '+'}</span></button><div className="detail-note"><strong>A considered choice</strong><span>Every piece in the edit is selected for how it earns its place in your everyday.</span></div></div></div></section>
+  const saveToWishlist = async () => {
+    const token = localStorage.getItem('ecommerce_token')
+    if (!token) return window.location.assign('/login')
+    const response = await fetch(`http://localhost:5000/api/wishlist/${product.id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+    if (response.ok) setSaved(true)
+  }
+
+  return <section className="product-detail container-main"><Link to="/products" className="back-link">← Back to the edit</Link><div className="detail-layout"><div className="detail-image product-image-0"><span>01 / {product.categoryName}</span></div><div className="detail-copy"><span className="eyebrow">{product.categoryName}</span><h2>{product.name}</h2><strong className="detail-price">${product.price}</strong><p>{product.description}</p><div className="stock-row"><span className="stock-dot" />{product.stockQuantity > 0 ? `${product.stockQuantity} ready to ship` : 'Currently sold out'}</div><div className="detail-actions"><button className="btn-primary" onClick={addToCart} disabled={product.stockQuantity === 0}>{added ? 'Added to cart' : 'Add to cart'} <span>{added ? '✓' : '+'}</span></button><button className="save-button" onClick={saveToWishlist}>{saved ? 'Saved ♥' : 'Save ♡'}</button></div><div className="detail-note"><strong>A considered choice</strong><span>Every piece in the edit is selected for how it earns its place in your everyday.</span></div></div></div></section>
 }
 
 function CartPage() {
@@ -182,6 +190,20 @@ function CartPage() {
 
   const total = items.reduce((sum, item) => sum + Number(item.subtotal), 0)
   return <section className="cart-page container-main"><div className="cart-heading"><div><span className="eyebrow">Your cart</span><h2>Good choices,<br /><em>gathered.</em></h2></div><span className="cart-summary">{items.length} {items.length === 1 ? 'piece' : 'pieces'}</span></div>{items.length === 0 ? <div className="cart-empty"><p className="muted">Nothing here yet. The edit is full of possibilities.</p><Link to="/products" className="text-link">Browse the edit</Link></div> : <div className="cart-layout"><div className="cart-items">{items.map((item, index) => <article className="cart-item" key={item.productId}><div className={`cart-thumb product-image-${index % 3}`} /><div className="cart-item-info"><span className="product-category">In your edit</span><h3>{item.name}</h3><span className="muted">${item.price} each</span></div><div className="quantity-control"><button onClick={() => updateQuantity(item.productId, item.quantity - 1)} aria-label={`Decrease ${item.name} quantity`}>−</button><span>{item.quantity}</span><button onClick={() => updateQuantity(item.productId, item.quantity + 1)} aria-label={`Increase ${item.name} quantity`}>+</button></div><strong>${item.subtotal}</strong><button className="remove-item" onClick={() => removeItem(item.productId)}>Remove</button></article>)}</div><aside className="cart-total"><span className="eyebrow">Order preview</span><div><span>Subtotal</span><strong>${total.toFixed(2)}</strong></div><p>Shipping and taxes are calculated at checkout.</p><button className="btn-primary" disabled>Continue to checkout <span>→</span></button></aside></div>}</section>
+}
+
+function WishlistPage() {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const token = localStorage.getItem('ecommerce_token')
+
+  const loadWishlist = () => fetch('http://localhost:5000/api/wishlist', { headers: { Authorization: `Bearer ${token}` } }).then((response) => response.json()).then((result) => setItems(result.data)).finally(() => setLoading(false))
+  useEffect(() => { if (token) loadWishlist(); else setLoading(false) }, [])
+
+  const remove = async (productId) => { await fetch(`http://localhost:5000/api/wishlist/${productId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }); loadWishlist() }
+  if (!token) return <section className="wishlist-page container-main"><span className="eyebrow">Your wishlist</span><h2>Keep the<br /><em>good ones.</em></h2><p className="muted">Sign in to save pieces you want to return to.</p><Link to="/login" className="btn-primary">Sign in to continue <span>→</span></Link></section>
+  if (loading) return <section className="wishlist-page container-main"><p className="muted">Opening your saved pieces...</p></section>
+  return <section className="wishlist-page container-main"><div className="wishlist-heading"><div><span className="eyebrow">Your wishlist</span><h2>The ones<br /><em>to remember.</em></h2></div><span className="cart-summary">{items.length} saved</span></div>{items.length === 0 ? <div className="cart-empty"><p className="muted">Nothing saved yet. Start with the current edit.</p><Link to="/products" className="text-link">Browse the edit</Link></div> : <div className="wishlist-grid">{items.map((item, index) => <article className="wishlist-card" key={item.id}><div className={`wishlist-thumb product-image-${index % 3}`} /><span className="product-category">{item.categoryName}</span><h3>{item.name}</h3><div className="wishlist-card-bottom"><strong>${item.price}</strong><button className="remove-item" onClick={() => remove(item.id)}>Remove</button></div></article>)}</div>}</section>
 }
 
 function App() {
@@ -226,7 +248,7 @@ function App() {
         <header className="site-header">
           <nav className="container-main nav-bar">
             <Link to="/" className="brand"><span className="brand-mark">A</span> Aster & Co.</Link>
-            <div className="nav-links"><Link to="/products">Discover</Link><Link to="/cart">Cart <span className="cart-count">0</span></Link>{user ? <Link to="/dashboard" className="profile-link">{user.name.charAt(0)}</Link> : <Link to="/login" className="nav-cta">Sign in</Link>}</div>
+            <div className="nav-links"><Link to="/products">Discover</Link><Link to="/cart">Cart <span className="cart-count">0</span></Link>{user ? <><Link to="/wishlist">Saved</Link><Link to="/dashboard" className="profile-link">{user.name.charAt(0)}</Link></> : <Link to="/login" className="nav-cta">Sign in</Link>}</div>
           </nav>
         </header>
 
@@ -239,6 +261,7 @@ function App() {
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
             <Route path="/cart" element={<CartPage />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
           </Routes>
         </main>
 
