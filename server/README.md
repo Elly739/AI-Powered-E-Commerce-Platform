@@ -23,6 +23,7 @@ Create `.env` file:
 PORT=5000
 NODE_ENV=development
 DATABASE_URL=postgresql://user:password@localhost:5432/ecommerce_db
+DATABASE_SSL=false
 JWT_SECRET=your_jwt_secret_key
 JWT_EXPIRE_IN=24h
 STRIPE_SECRET_KEY=sk_test_...
@@ -36,6 +37,17 @@ npm run dev
 ```
 
 Server runs on: `http://localhost:5000`
+
+### Supabase PostgreSQL
+
+For Supabase, set the connection string in `server/.env` and enable SSL:
+
+```
+DATABASE_URL=postgresql://postgres:<URL_ENCODED_PASSWORD>@db.<PROJECT_REF>.supabase.co:5432/postgres
+DATABASE_SSL=true
+```
+
+Use Supabase's transaction pooler connection string for serverless deployments. Do not commit `server/.env` or share the database password. If the password contains `$`, `?`, `@`, `#`, or other URL characters, URL-encode it first.
 
 ### Production
 
