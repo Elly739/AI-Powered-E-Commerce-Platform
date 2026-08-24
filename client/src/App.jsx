@@ -127,6 +127,9 @@ function ProductDetailPage() {
   const [error, setError] = useState('')
   const [added, setAdded] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [reviews, setReviews] = useState([])
+  const [review, setReview] = useState({ rating: 5, body: '' })
+  const [reviewMessage, setReviewMessage] = useState('')
   const productId = window.location.pathname.split('/').pop()
 
   useEffect(() => {
@@ -138,6 +141,8 @@ function ProductDetailPage() {
       .then((result) => setProduct(result.data))
       .catch((requestError) => setError(requestError.message))
       .finally(() => setLoading(false))
+    fetch(`http://localhost:5000/api/reviews/${productId}`).then((response) => response.json()).then((result) => setReviews(result.data || []))
+    fetch('http://localhost:5000/api/interactions', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('ecommerce_token') ? { Authorization: `Bearer ${localStorage.getItem('ecommerce_token')}` } : {}) }, body: JSON.stringify({ productId, interactionType: 'viewed', metadata: { source: 'product-detail' } }) })
   }, [productId])
 
   if (loading) return <section className="detail-state container-main"><p className="muted">Opening the piece...</p></section>
@@ -157,7 +162,19 @@ function ProductDetailPage() {
     if (response.ok) setSaved(true)
   }
 
-  return <section className="product-detail container-main"><Link to="/products" className="back-link">← Back to the edit</Link><div className="detail-layout"><div className="detail-image product-image-0"><span>01 / {product.categoryName}</span></div><div className="detail-copy"><span className="eyebrow">{product.categoryName}</span><h2>{product.name}</h2><strong className="detail-price">${product.price}</strong><p>{product.description}</p><div className="stock-row"><span className="stock-dot" />{product.stockQuantity > 0 ? `${product.stockQuantity} ready to ship` : 'Currently sold out'}</div><div className="detail-actions"><button className="btn-primary" onClick={addToCart} disabled={product.stockQuantity === 0}>{added ? 'Added to cart' : 'Add to cart'} <span>{added ? '✓' : '+'}</span></button><button className="save-button" onClick={saveToWishlist}>{saved ? 'Saved ♥' : 'Save ♡'}</button></div><div className="detail-note"><strong>A considered choice</strong><span>Every piece in the edit is selected for how it earns its place in your everyday.</span></div></div></div></section>
+  const submitReview = async (event) => {
+    event.preventDefault()
+    const token = localStorage.getItem('ecommerce_token')
+    if (!token) return window.location.assign('/login')
+    const response = await fetch(`http://localhost:5000/api/reviews/${product.id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(review) })
+    const result = await response.json()
+    if (!response.ok) return setReviewMessage(result.message)
+    setReviews([result.data, ...reviews])
+    setReview({ rating: 5, body: '' })
+    setReviewMessage('Your note is saved.')
+  }
+
+  return <section className="product-detail container-main"><Link to="/products" className="back-link">← Back to the edit</Link><div className="detail-layout"><div className="detail-image product-image-0"><span>01 / {product.categoryName}</span></div><div className="detail-copy"><span className="eyebrow">{product.categoryName}</span><h2>{product.name}</h2><strong className="detail-price">${product.price}</strong><p>{product.description}</p><div className="stock-row"><span className="stock-dot" />{product.stockQuantity > 0 ? `${product.stockQuantity} ready to ship` : 'Currently sold out'}</div><div className="detail-actions"><button className="btn-primary" onClick={addToCart} disabled={product.stockQuantity === 0}>{added ? 'Added to cart' : 'Add to cart'} <span>{added ? '✓' : '+'}</span></button><button className="save-button" onClick={saveToWishlist}>{saved ? 'Saved ♥' : 'Save ♡'}</button></div><div className="detail-note"><strong>A considered choice</strong><span>Every piece in the edit is selected for how it earns its place in your everyday.</span></div></div></div><section className="reviews-section"><div><span className="eyebrow">Community notes</span><h3>What people noticed.</h3></div><div className="review-list">{reviews.length ? reviews.map((item) => <article className="review-card" key={item.id}><strong>{'★'.repeat(item.rating)}</strong><p>{item.body}</p><span>{item.reviewerName || 'Aster customer'}</span></article>) : <p className="muted">Be the first to leave a note.</p>}</div><form className="review-form" onSubmit={submitReview}><label>Leave a note<select value={review.rating} onChange={(event) => setReview({ ...review, rating: Number(event.target.value) })}><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select><textarea value={review.body} onChange={(event) => setReview({ ...review, body: event.target.value })} placeholder="What makes this piece work for you?" required /></label><button className="btn-secondary" type="submit">{localStorage.getItem('ecommerce_token') ? 'Save your note' : 'Sign in to review'}</button>{reviewMessage && <span className="muted">{reviewMessage}</span>}</form></section></section>
 }
 
 function CartPage() {

@@ -2,12 +2,14 @@ import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
 import dotenv from 'dotenv'
-import { authRoutes, cartRoutes, orderRoutes, productRoutes, wishlistRoutes } from './routes/index.js'
+import { authRoutes, cartRoutes, interactionRoutes, orderRoutes, productRoutes, reviewRoutes, wishlistRoutes } from './routes/index.js'
 import { initializeUsersTable } from './models/User.js'
 import { initializeProductTables } from './models/Product.js'
 import { initializeCartTable } from './models/Cart.js'
 import { initializeWishlistTable } from './models/Wishlist.js'
 import { initializeOrderTables } from './models/Order.js'
+import { initializeInteractionTable } from './models/Interaction.js'
+import { initializeReviewTables } from './models/Review.js'
 
 dotenv.config()
 
@@ -36,6 +38,8 @@ app.use('/api/products', productRoutes)
 
 app.use('/api/cart', cartRoutes)
 app.use('/api/wishlist', wishlistRoutes)
+app.use('/api/reviews', reviewRoutes)
+app.use('/api/interactions', interactionRoutes)
 
 app.use('/api/orders', orderRoutes)
 
@@ -73,6 +77,9 @@ app.listen(PORT, async () => {
     console.log('✅ Wishlist table ready')
     await initializeOrderTables()
     console.log('✅ Order tables ready')
+    await initializeReviewTables()
+    await initializeInteractionTable()
+    console.log('✅ Reviews and interaction tables ready')
   } catch (error) {
     console.error('⚠️ Users table unavailable:', error.message)
   }
