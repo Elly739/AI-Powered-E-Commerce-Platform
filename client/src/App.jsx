@@ -4,6 +4,8 @@ import './index.css'
 
 /* eslint-disable react/prop-types */
 
+const normalizeUser = (user) => user && ({ ...user, name: user.name || user.fullName || user.email })
+
 function AuthPage({ mode, onAuthenticated }) {
   const isLogin = mode === 'login'
   const [form, setForm] = useState({ name: '', email: '', password: '' })
@@ -183,7 +185,7 @@ function CartPage() {
 }
 
 function App() {
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('ecommerce_user') || 'null'))
+  const [user, setUser] = useState(() => normalizeUser(JSON.parse(localStorage.getItem('ecommerce_user') || 'null')))
 
   useEffect(() => {
     const token = localStorage.getItem('ecommerce_token')
@@ -196,7 +198,7 @@ function App() {
       })
       .then((result) => {
         localStorage.setItem('ecommerce_user', JSON.stringify(result.data))
-        setUser(result.data)
+        setUser(normalizeUser(result.data))
       })
       .catch(() => {
         localStorage.removeItem('ecommerce_user')
@@ -206,9 +208,10 @@ function App() {
   }, [])
 
   const handleAuthenticated = (authenticatedUser, token) => {
-    localStorage.setItem('ecommerce_user', JSON.stringify(authenticatedUser))
+    const normalizedUser = normalizeUser(authenticatedUser)
+    localStorage.setItem('ecommerce_user', JSON.stringify(normalizedUser))
     localStorage.setItem('ecommerce_token', token)
-    setUser(authenticatedUser)
+    setUser(normalizedUser)
   }
 
   const handleLogout = () => {
